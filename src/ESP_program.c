@@ -28,29 +28,29 @@ u32 arr_size = 0;
 u8 ReceivedByte;
 #define FALSE 0
 #define TRUE 1
-u8 StringMatch(u8* SourceString, u8* StringToFind){
-    u8 state = FALSE;
-    for (u8 i = 0; SourceString[i] != '\0'; i++){
-        if (SourceString[i] == StringToFind[0]) {
-            u8 j = 1;
-            for (; StringToFind[j] != '\0'; j++){
-                i++;
-                if (StringToFind[j] != SourceString[i])
-                    break;
-            }
-            if (StringToFind[j] == '\0') {
-                state = TRUE;
-                break;
-            }
-        }
-    }
+u8 StringMatch(u8* SourceString, u8* StringToFind) {
+	u8 state = FALSE;
+	for (u8 i = 0; SourceString[i] != '\0'; i++) {
+		if (SourceString[i] == StringToFind[0]) {
+			u8 j = 1;
+			for (; StringToFind[j] != '\0'; j++) {
+				i++;
+				if (StringToFind[j] != SourceString[i])
+					break;
+			}
+			if (StringToFind[j] == '\0') {
+				state = TRUE;
+				break;
+			}
+		}
+	}
 
-    return state;
+	return state;
 }
-
 
 /** FUNCTIONS **/
 void ESP_Initilization(void) {
+	u8 ErrorFlag = 0;
 	/** SYSTICK **/
 	// Initialize SYSTICK
 	STK_voidInit(SYSTICK_AHB_8);
@@ -61,9 +61,9 @@ void ESP_Initilization(void) {
 	// Enable USART1 Clock
 	RCC_void_PeripheralClockEnable(RCC_APB2, RCC_USART1);
 	// Pin A9: USART1 Tx
-	GPIO_void_SetPinMode(GPIO_PORTA,PIN9,GPIO_OUTPUT_ALT_PP_2MHZ);
+	GPIO_void_SetPinMode(GPIO_PORTA, PIN9, GPIO_OUTPUT_ALT_PP_2MHZ);
 	// Pin A10: USART1 Rx
-	GPIO_void_SetPinMode(GPIO_PORTA,PIN10,GPIO_INPUT_FLOATING);
+	GPIO_void_SetPinMode(GPIO_PORTA, PIN10, GPIO_INPUT_FLOATING);
 
 	/** USART **/
 	// Set Baud Rate to 115200 BPS
@@ -76,52 +76,57 @@ void ESP_Initilization(void) {
 
 	/** ESP **/
 	// Echo Mode
-	USART_SendString(USART_1,(u8 *) EchoOff);
-	// Poll untill you receive the correct response for this command
-	//while(!(ReceiveArray[0]=='\r' && ReceiveArray[1]=='\n' && ReceiveArray[2]=='O' && ReceiveArray[3]=='K' && ReceiveArray[4] =='\r' &&ReceiveArray[5]=='\n')){};
-	//while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n")){};
+	USART_SendString(USART_1, (u8 *) EchoOff);
 
-	while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n") ){
-		if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
+	// Poll untill you receive the correct FULL response for this command
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+		// Backdoor out of the loop incase of failiuer
+		if (StringMatch(ReceiveArray, (u8 *) "FAIL\r\n")) {
+			ErrorFlag = 1;
+			break;
+		} else if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+			ErrorFlag = 1;
 			break;
 		}
 	}
-	if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
-		arr_size=0;
-		for(u8 i=0;i<50;i++)
-			ReceiveArray[i]=0;
+	if (ErrorFlag) {
+		arr_size = 0;
+		for (u8 i = 0; i < 50; i++)
+			ReceiveArray[i] = 0;
 		ESP_Initilization();
 	}
 	// Restart Received UART data array size for the next command to fill it
-	arr_size=0;
-	for(u8 i=0;i<10;i++)
-		ReceiveArray[i]=0;
+	ErrorFlag=0;
+	arr_size = 0;
+	for (u8 i = 0; i < 10; i++)
+		ReceiveArray[i] = 0;
 
 	// Check WiFi Mode
 	// 1 : station mode (Connect to router)
 	// 2 : softAP mode (Access point)
 	// 3 : softAP + station mode (Both)
-	USART_SendString(USART_1, (u8 *)WifiMode1);
+	USART_SendString(USART_1, (u8 *) WifiMode1);
 	// Poll untill you receive the correct response for this command
-	//while(!(ReceiveArray[0]=='\r' && ReceiveArray[1]=='\n' && ReceiveArray[2]=='O' && ReceiveArray[3]=='K' && ReceiveArray[4] =='\r' &&ReceiveArray[5]=='\n')){};
-	//while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n")){};
-	while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n") ){
-		if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+		if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+			ErrorFlag = 1;
+			break;
+		}else if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+			ErrorFlag = 1;
 			break;
 		}
 	}
-	if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
-		arr_size=0;
-		for(u8 i=0;i<50;i++)
-			ReceiveArray[i]=0;
+	if (ErrorFlag) {
+		arr_size = 0;
+		for (u8 i = 0; i < 50; i++)
+			ReceiveArray[i] = 0;
 		ESP_Initilization();
 	}
 
-
 	// Restart Received UART data array size for the next command to fill it
-	arr_size=0;
-	for(u8 i=0;i<10;i++)
-		ReceiveArray[i]=0;
+	arr_size = 0;
+	for (u8 i = 0; i < 10; i++)
+		ReceiveArray[i] = 0;
 
 }
 
@@ -132,21 +137,21 @@ void ESP_ConnectToWIFI(u8* SSID, u8* password) {
 	USART_SendString(USART_1, password);
 	USART_SendString(USART_1, (u8 *) "\"\r\n");
 	//while(!(ReceiveArray[48]=='O' && ReceiveArray[49]=='K' && ReceiveArray[51]=='\n')){};
-	while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n") ){
-		if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+		if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
 			break;
 		}
 	}
-	if(StringMatch(ReceiveArray,(u8 *)"FAIL")){
-		arr_size=0;
-		for(u8 i=0;i<50;i++)
-			ReceiveArray[i]=0;
-		ESP_ConnectToWIFI(SSID,  password);
+	if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+		arr_size = 0;
+		for (u8 i = 0; i < 50; i++)
+			ReceiveArray[i] = 0;
+		ESP_ConnectToWIFI(SSID, password);
 	}
 	// Restart Received UART data array size for the next command to fill it	arr_size=0;
-	arr_size=0;
-	for(u8 i=0;i<50;i++)
-		ReceiveArray[i]=0;
+	arr_size = 0;
+	for (u8 i = 0; i < 50; i++)
+		ReceiveArray[i] = 0;
 }
 
 void ESP_ConnectToSite(u8* IP) {
@@ -158,32 +163,35 @@ void ESP_ConnectToSite(u8* IP) {
 	//STK_DelayMS(100);
 
 	//while(!(ReceiveArray[11]=='O' && ReceiveArray[12]=='K' && ReceiveArray[14]=='\n')){};
-	while(!StringMatch(ReceiveArray,(u8 *)"OK\r\n"));
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n"))
+		;
 
-	arr_size=0;
-	for(u8 i=0;i<50;i++)
-		ReceiveArray[i]=0;
+	arr_size = 0;
+	for (u8 i = 0; i < 50; i++)
+		ReceiveArray[i] = 0;
 }
 
-u8 ESP_SendData(u8* DataLength, u8* Data){
+u8 ESP_SendData(u8* DataLength, u8* Data) {
 	// Send Data
 	USART_SendString(USART_1, (u8 *) "AT+CIPSEND=");
 	USART_SendString(USART_1, DataLength);
 	USART_SendString(USART_1, (u8 *) "\r\n");
 	//while(!(ReceiveArray[6]=='>'&&ReceiveArray[7]==' ')){};
-	while(!StringMatch(ReceiveArray,(u8 *)"> "));
-	arr_size=0;
-	for(u8 i=0;i<50;i++)
-		ReceiveArray[i]=0;
+	while (!StringMatch(ReceiveArray, (u8 *) "> "))
+		;
+	arr_size = 0;
+	for (u8 i = 0; i < 50; i++)
+		ReceiveArray[i] = 0;
 	USART_SendString(USART_1, Data);
 	USART_SendString(USART_1, (u8 *) "\r\n");
 	//while(!(ReceiveArray[38]=='C' &&ReceiveArray[45]=='\n')){};
-	while(!StringMatch(ReceiveArray,(u8 *)"CLOSED\r\n"));
+	while (!StringMatch(ReceiveArray, (u8 *) "CLOSED\r\n"))
+		;
 
-	u8 data= ReceiveArray[37];
-	arr_size=0;
-	for(u8 i=0;i<55;i++)
-		ReceiveArray[i]=0;
+	u8 data = ReceiveArray[37];
+	arr_size = 0;
+	for (u8 i = 0; i < 55; i++)
+		ReceiveArray[i] = 0;
 
 	return data;
 }
