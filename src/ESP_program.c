@@ -12,7 +12,6 @@
 #include "BIT_MATH.h"
 // Interface of lower layer (MCAL)
 #include "USART/USART_interface.h"
-#include "SYSTICK/SYSTICK_interface.h"
 #include "NVIC/NVIC_interface.h"
 #include "GPIO/GPIO_interface.h"
 #include "RCC/RCC_interface.h"
@@ -51,9 +50,6 @@ u8 StringMatch(u8* SourceString, u8* StringToFind) {
 /** FUNCTIONS **/
 void ESP_Initilization(void) {
 	u8 ErrorFlag = 0;
-	/** SYSTICK **/
-	// Initialize SYSTICK
-	STK_voidInit(SYSTICK_AHB_8);
 
 	/** GPIO **/
 	// Enable GPIOA Clock
