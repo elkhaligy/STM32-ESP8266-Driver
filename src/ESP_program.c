@@ -15,6 +15,7 @@
 #include "NVIC/NVIC_interface.h"
 #include "GPIO/GPIO_interface.h"
 #include "RCC/RCC_interface.h"
+#include "SYSTICK/SYSTICK_interface.h"
 // Own driver files
 #include <ESP_interface.h>
 #include <ESP_config.h>
@@ -27,6 +28,7 @@ u32 arr_size = 0;
 u8 ReceivedByte;
 #define FALSE 0
 #define TRUE 1
+extern u8 IP[];
 u8 StringMatch(u8* SourceString, u8* StringToFind) {
 	u8 state = FALSE;
 	for (u8 i = 0; SourceString[i] != '\0'; i++) {
@@ -50,7 +52,7 @@ u8 StringMatch(u8* SourceString, u8* StringToFind) {
 /** FUNCTIONS **/
 void ESP_Initilization(void) {
 	u8 ErrorFlag = 0;
-
+	STK_voidInit(SYSTICK_AHB_8);
 	/** GPIO **/
 	// Enable GPIOA Clock
 	RCC_void_PeripheralClockEnable(RCC_APB2, RCC_GPIOA);
@@ -73,7 +75,6 @@ void ESP_Initilization(void) {
 	/** ESP **/
 	// Echo Mode
 	USART_SendString(USART_1, (u8 *) EchoOff);
-
 	// Poll untill you receive the correct FULL response for this command
 	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
 		// Backdoor out of the loop incase of failiuer
@@ -125,25 +126,49 @@ void ESP_Initilization(void) {
 		ReceiveArray[i] = 0;
 
 }
-
+void ESP_Restart(){
+	USART_SendString(USART_1, (u8 *) "AT+RST\r\n");
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {}
+	arr_size = 0;
+	for (u8 i = 0; i < 50; i++)
+		ReceiveArray[i] = 0;
+}
 void ESP_ConnectToWIFI(u8* SSID, u8* password) {
-	USART_SendString(USART_1, (u8 *) "AT+CWJAP_DEF=\"");
+	//ESP_Restart();
+	u8 ErrorFlag=0;
+	USART_SendString(USART_1, (u8 *) "AT+CWJAP_CUR=\"");
 	USART_SendString(USART_1, SSID);
 	USART_SendString(USART_1, (u8 *) "\",\"");
 	USART_SendString(USART_1, password);
 	USART_SendString(USART_1, (u8 *) "\"\r\n");
 	//while(!(ReceiveArray[48]=='O' && ReceiveArray[49]=='K' && ReceiveArray[51]=='\n')){};
 	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
-		if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+		// Backdoor out of the loop incase of failiuer
+		if (StringMatch(ReceiveArray, (u8 *) "FAIL\r\n")) {
+			ErrorFlag = 1;
+			break;
+		} else if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+			ErrorFlag = 1;
 			break;
 		}
 	}
-	if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+	if (ErrorFlag) {
 		arr_size = 0;
 		for (u8 i = 0; i < 50; i++)
 			ReceiveArray[i] = 0;
-		ESP_ConnectToWIFI(SSID, password);
+		ESP_ConnectToWIFI(SSID,password);
 	}
+//	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+//		if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+//			break;
+//		}
+//	}
+////	if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+////		arr_size = 0;
+////		for (u8 i = 0; i < 50; i++)
+////			ReceiveArray[i] = 0;
+////		ESP_ConnectToWIFI(SSID, password);
+////	}
 	// Restart Received UART data array size for the next command to fill it	arr_size=0;
 	arr_size = 0;
 	for (u8 i = 0; i < 50; i++)
@@ -151,6 +176,8 @@ void ESP_ConnectToWIFI(u8* SSID, u8* password) {
 }
 
 void ESP_ConnectToSite(u8* IP) {
+	u8 ErrorFlag=0;
+	//u8 ErrorFlag2=0;
 	USART_SendString(USART_1, (u8 *) "AT+CIPSTART=\"TCP\",\"");
 	USART_SendString(USART_1, IP);
 	USART_SendString(USART_1, (u8 *) "\",");
@@ -159,30 +186,75 @@ void ESP_ConnectToSite(u8* IP) {
 	//STK_DelayMS(100);
 
 	//while(!(ReceiveArray[11]=='O' && ReceiveArray[12]=='K' && ReceiveArray[14]=='\n')){};
-	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n"))
-		;
+	//while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n"));
+//	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+//		if (StringMatch(ReceiveArray, (u8 *) "FAIL")) {
+//			ErrorFlag = 1;
+//			break;
+//		}else if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+//			ErrorFlag = 1;
+//			break;
+//		}
+//	}
 
+	while (!StringMatch(ReceiveArray, (u8 *) "OK\r\n")) {
+		// Backdoor out of the loop incase of failiuer
+		if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+			ErrorFlag = 1;
+			break;
+		}
+	}
+	if (ErrorFlag) {
+		if( StringMatch(ReceiveArray, (u8 *) "no ip") ){
+			arr_size = 0;
+			for (u8 i = 0; i < 50; i++)
+				ReceiveArray[i] = 0;
+			ESP_WaitForWifi(IP);
+		}else{
+			arr_size = 0;
+			for (u8 i = 0; i < 50; i++)
+				ReceiveArray[i] = 0;
+			ESP_ConnectToSite(IP);
+		}
+	}
 	arr_size = 0;
 	for (u8 i = 0; i < 50; i++)
 		ReceiveArray[i] = 0;
 }
+void ESP_WaitForWifi(void){
+	arr_size = 0;
+	for (u8 i = 0; i < 55; i++)
+		ReceiveArray[i] = 0;
+	while (!StringMatch(ReceiveArray, (u8 *) "GOT IP")) {
+	}
+	arr_size = 0;
+	for (u8 i = 0; i < 55; i++)
+		ReceiveArray[i] = 0;
 
+}
 u8 ESP_SendData(u8* DataLength, u8* Data) {
 	// Send Data
 	USART_SendString(USART_1, (u8 *) "AT+CIPSEND=");
 	USART_SendString(USART_1, DataLength);
 	USART_SendString(USART_1, (u8 *) "\r\n");
 	//while(!(ReceiveArray[6]=='>'&&ReceiveArray[7]==' ')){};
-	while (!StringMatch(ReceiveArray, (u8 *) "> "))
-		;
+	while (!StringMatch(ReceiveArray, (u8 *) "> ")){
+		if (StringMatch(ReceiveArray, (u8 *) "ERROR\r\n")) {
+			arr_size = 0;
+			for (u8 i = 0; i < 50; i++)
+				ReceiveArray[i] = 0;
+			//ESP_SendData((u8 *)DataLength,(u8 *)Data);
+			ESP_ConnectToSite((u8 *)"162.253.155.226");
+			break;
+		}
+	}
 	arr_size = 0;
 	for (u8 i = 0; i < 50; i++)
 		ReceiveArray[i] = 0;
 	USART_SendString(USART_1, Data);
 	USART_SendString(USART_1, (u8 *) "\r\n");
-	//while(!(ReceiveArray[38]=='C' &&ReceiveArray[45]=='\n')){};
-	while (!StringMatch(ReceiveArray, (u8 *) "CLOSED\r\n"))
-		;
+
+	while (!StringMatch(ReceiveArray, (u8 *) "CLOSED\r\n")) {}
 
 	u8 data = ReceiveArray[37];
 	arr_size = 0;

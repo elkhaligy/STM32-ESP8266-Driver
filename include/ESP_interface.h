@@ -8,7 +8,8 @@
 #ifndef ESP_INTERFACE_H_
 #define ESP_INTERFACE_H_
 
-
+#define SSID2 "shehab"
+#define Password2 "12345678900"
 
 void ESP_Initilization(void);
 void ESP_ConnectToWIFI(u8* SSID, u8* password);

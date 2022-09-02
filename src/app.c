@@ -17,9 +17,9 @@
 #include "SEVENSEG/SEVENSEG_interface.h"
 /** GLOBAL VARIABLES **/
 u8 SSID[]="Radiant";
-u8 SSID2[]="shehab";
+
 u8 Password[]="123456789Log";
-u8 Password2[]="12345678900";
+
 
 u8 IP[]="162.253.155.226";
 u8 Data[]="GET http://shehab.freevar.com/status.txt";
@@ -31,10 +31,11 @@ int main(void){
 	RCC_void_Initialize();
 	/** ESP: USES GPIOA -> PINA 9 and 10 **/
 	ESP_Initilization();
-	ESP_ConnectToWIFI(SSID,Password);
+	ESP_ConnectToWIFI((u8 *)SSID2,(u8 *)Password2);
 	ESP_ConnectToSite(IP);
 	/** SEVENSEG: USES GPIOA -> PIN0 to PIN 6 **/
 	SEVENSEG_Initialize();
+	//SEVENSEG_SendNumber(9);
 	u8 SevenSegNumber=ESP_SendData(DataLength,Data);
 	/** MAIN LOOP **/
 	while(1){
