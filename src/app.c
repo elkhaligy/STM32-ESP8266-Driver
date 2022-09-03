@@ -9,10 +9,10 @@
 // Libraries
 #include "BIT_MATH.h"
 #include "STD_TYPES.h"
-// Interfaces MCAL
+// Interfaces of MCAL
 #include "GPIO/GPIO_interface.h"
 #include "RCC/RCC_interface.h"
-// Interfaces HAL
+// Interfaces of HAL
 #include "ESP_interface.h"
 #include "SEVENSEG/SEVENSEG_interface.h"
 /** GLOBAL VARIABLES **/
