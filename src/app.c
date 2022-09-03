@@ -16,9 +16,8 @@
 #include "ESP_interface.h"
 #include "SEVENSEG/SEVENSEG_interface.h"
 /** GLOBAL VARIABLES **/
-u8 SSID[]="Radiant";
-
-u8 Password[]="123456789Log";
+u8 SSID[]="D";
+u8 Password[]="D";
 
 
 u8 IP[]="162.253.155.226";
