@@ -5,4 +5,4 @@
 | ---- | ---- | --- | --- |
 
 ## App 
-The app used to test the driver is seven-segment display controlled by website [Here](shehab.freevar.com/)
+The app used to test the driver is seven-segment display controlled by website [Here](http://shehab.freevar.com/)
